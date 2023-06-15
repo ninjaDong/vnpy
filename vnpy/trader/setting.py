@@ -18,16 +18,14 @@ SETTINGS: Dict[str, Any] = {
     "log.console": True,
     "log.file": True,
 
-    "email.server": "smtp.qq.com",
-    "email.port": 465,
-    "email.username": "",
-    "email.password": "",
-    "email.sender": "",
-    "email.receiver": "",
+    
+    "wechat.off": False,
+    "wechat.agent_id": '',
+    "wechat.secret": '',
+    "wechat.usr_id": '',
 
-    "datafeed.name": "",
-    "datafeed.username": "",
-    "datafeed.password": "",
+    "rqdata.username": "",
+    "rqdata.password": "",
 
     "database.timezone": get_localzone_name(),
     "database.name": "sqlite",

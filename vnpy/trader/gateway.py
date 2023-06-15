@@ -5,6 +5,7 @@ from copy import copy
 from vnpy.event import Event, EventEngine
 from .event import (
     EVENT_TICK,
+    EVENT_BAR,
     EVENT_ORDER,
     EVENT_TRADE,
     EVENT_POSITION,
@@ -12,6 +13,7 @@ from .event import (
     EVENT_CONTRACT,
     EVENT_LOG,
     EVENT_QUOTE,
+    EVENT_BALANCE,
 )
 from .object import (
     TickData,
@@ -28,7 +30,8 @@ from .object import (
     HistoryRequest,
     QuoteRequest,
     Exchange,
-    BarData
+    BarData,
+    BalanceData
 )
 
 
@@ -100,6 +103,14 @@ class BaseGateway(ABC):
         self.on_event(EVENT_TICK, tick)
         self.on_event(EVENT_TICK + tick.vt_symbol, tick)
 
+    def on_bar(self, bar: BarData) -> None:
+        """
+        Bar  event push.
+        Bar event of a specific vt_symbol is also pushed.
+        """
+        self.on_event(EVENT_BAR, bar)
+        self.on_event(EVENT_BAR + bar.vt_symbol, bar)
+
     def on_trade(self, trade: TradeData) -> None:
         """
         Trade event push.
@@ -131,6 +142,12 @@ class BaseGateway(ABC):
         """
         self.on_event(EVENT_ACCOUNT, account)
         self.on_event(EVENT_ACCOUNT + account.vt_accountid, account)
+
+    def on_balance(self, balance: BalanceData) -> None:
+        """
+        Account event push.
+        """
+        self.on_event(EVENT_BALANCE, balance)
 
     def on_quote(self, quote: QuoteData) -> None:
         """

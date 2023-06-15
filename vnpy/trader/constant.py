@@ -64,6 +64,7 @@ class OrderType(Enum):
     FAK = "FAK"
     FOK = "FOK"
     RFQ = "询价"
+    MARKET_FAK = "市价_FAK"
 
 
 class OptionType(Enum):
@@ -129,6 +130,19 @@ class Exchange(Enum):
     OTC = "OTC"             # OTC Product (Forex/CFD/Pink Sheet Equity)
     IBKRATS = "IBKRATS"     # Paper Trading Exchange of IB
 
+    # CryptoCurrency
+    BITMEX = "BITMEX"
+    OKEX = "OKEX"
+    HUOBI = "HUOBI"
+    BITFINEX = "BITFINEX"
+    BINANCE = "BINANCE"
+    BINANCES = "BINANCES"
+    BYBIT = "BYBIT"         # bybit.com
+    COINBASE = "COINBASE"
+    DERIBIT = "DERIBIT"
+    GATEIO = "GATEIO"
+    BITSTAMP = "BITSTAMP"
+
     # Special Function
     LOCAL = "LOCAL"         # For local generated data
 
@@ -147,8 +161,11 @@ class Interval(Enum):
     """
     Interval of bar data.
     """
+    SECOND = "1s"
     MINUTE = "1m"
+    MINUTE_15 = "15m"
     HOUR = "1h"
+    HOUR_4 = "4h"
     DAILY = "d"
     WEEKLY = "w"
     TICK = "tick"

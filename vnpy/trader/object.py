@@ -119,10 +119,15 @@ class OrderData(BaseData):
     type: OrderType = OrderType.LIMIT
     direction: Direction = None
     offset: Offset = Offset.NONE
+
     price: float = 0
+    trade_avg_price: float = 0.0
+    fee: float = 0.0
+    profit: float = 0.0
     volume: float = 0
     traded: float = 0
     status: Status = Status.SUBMITTING
+    err_code: int = 0
     datetime: datetime = None
     reference: str = ""
 
@@ -130,6 +135,8 @@ class OrderData(BaseData):
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
         self.vt_orderid: str = f"{self.gateway_name}.{self.orderid}"
+        if self.trade_avg_price == 0:
+            self.trade_avg_price = self.price
 
     def is_active(self) -> bool:
         """
@@ -161,11 +168,14 @@ class TradeData(BaseData):
     direction: Direction = None
 
     offset: Offset = Offset.NONE
-    price: float = 0
-    volume: float = 0
+    price: float = 0.0
+    volume: float = 0.0
     datetime: datetime = None
 
-    def __post_init__(self) -> None:
+    fee: float = 0.0
+    profit: float = 0.0
+
+    def __post_init__(self):
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
         self.vt_orderid: str = f"{self.gateway_name}.{self.orderid}"
@@ -182,17 +192,37 @@ class PositionData(BaseData):
     exchange: Exchange
     direction: Direction
 
-    volume: float = 0
-    frozen: float = 0
-    price: float = 0
-    pnl: float = 0
-    yd_volume: float = 0
+    volume: float = 0.0
+    availPos:float = 0.0
+    frozen: float = 0.0
+    price: float = 0.0
+    hold: float = 0.0
+    pnl_unreal: float = 0.0
+    pnl: float = 0.0
+    pnl_rate: str = ""
+    yd_volume: float = 0.0
+    lever: float = 0
+    mgn_ratio: str = ""
+    liq_px: float = 0.0
 
     def __post_init__(self) -> None:
         """"""
         self.vt_symbol: str = f"{self.symbol}.{self.exchange.value}"
         self.vt_positionid: str = f"{self.gateway_name}.{self.vt_symbol}.{self.direction.value}"
 
+@dataclass
+class BalanceData(BaseData):
+    """
+    Balance data
+    """
+    ccy: str
+    eventType: str
+    cash_bal: float = 0.0
+    bal_change: float = 0.0
+
+    def __post_init__(self):
+        """"""
+        self.vt_balance_id = f"{self.gateway_name}.{self.ccy}"
 
 @dataclass
 class AccountData(BaseData):
@@ -205,10 +235,16 @@ class AccountData(BaseData):
 
     balance: float = 0
     frozen: float = 0
+    position: float = 0
+    available: float = 0
+    lever: float = 0
+    riskrate: str = ""
+    liquidation: float = 0
 
     def __post_init__(self) -> None:
         """"""
-        self.available: float = self.balance - self.frozen
+        if not self.available:
+            self.available: float = self.balance - self.frozen
         self.vt_accountid: str = f"{self.gateway_name}.{self.accountid}"
 
 
@@ -239,10 +275,15 @@ class ContractData(BaseData):
     size: float
     pricetick: float
 
-    min_volume: float = 1           # minimum trading volume of the contract
-    stop_supported: bool = False    # whether server supports stop order
-    net_position: bool = False      # whether gateway uses net position volume
-    history_data: bool = False      # whether gateway provides bar history data
+    inverse: bool = False
+    min_volume: float = 1  # minimum trading volume of the contract
+    step_volume: float = 1 # step size of trading volume of the contract
+    maxLmt_vol: float = 0  # max trading volume with limit order
+    maxMkt_vol: float = 0  # max trading volume with market order
+    stop_supported: bool = False  # whether server supports stop order
+    net_position: bool = False  # whether gateway uses net position volume
+    history_data: bool = False  # whether gateway provides bar history data
+    contract_status: int = 1
 
     option_strike: float = 0
     option_underlying: str = ""     # vt_symbol of underlying contract

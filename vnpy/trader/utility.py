@@ -200,6 +200,7 @@ class BarGenerator:
         self.on_window_bar: Callable = on_window_bar
 
         self.last_tick: TickData = None
+        self.last_bar: BarData = None
 
     def update_tick(self, tick: TickData) -> None:
         """
@@ -307,6 +308,9 @@ class BarGenerator:
         if not (bar.datetime.minute + 1) % self.window:
             self.on_window_bar(self.window_bar)
             self.window_bar = None
+
+        # Cache last bar object
+        self.last_bar = bar
 
     def update_bar_hour_window(self, bar: BarData) -> None:
         """"""
@@ -709,7 +713,16 @@ class ArrayManager(object):
         """
         Relative Strenght Index (RSI).
         """
-        result: np.ndarray = talib.RSI(self.close, n)
+        result: np.ndarray= talib.RSI(self.close, n)
+        if array:
+            return result
+        return result[-1]
+
+    def ma(self, n: int, array: bool = False) -> Union[float, np.ndarray]:
+        """
+        ma
+        """
+        result: np.ndarray= talib.MA(self.close, n)
         if array:
             return result
         return result[-1]

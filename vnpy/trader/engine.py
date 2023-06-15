@@ -10,6 +10,8 @@ from queue import Empty, Queue
 from threading import Thread
 from typing import Any, Type, Dict, List, Optional
 
+from wechatpy.enterprise import WeChatClient
+
 from vnpy.event import Event, EventEngine
 from .app import BaseApp
 from .event import (
@@ -20,6 +22,7 @@ from .event import (
     EVENT_ACCOUNT,
     EVENT_CONTRACT,
     EVENT_LOG,
+	EVENT_BALANCE,
     EVENT_QUOTE
 )
 from .gateway import BaseGateway
@@ -38,7 +41,7 @@ from .object import (
     PositionData,
     AccountData,
     ContractData,
-    Exchange
+    Exchange, BalanceData
 )
 from .setting import SETTINGS
 from .utility import get_folder_path, TRADER_DIR
@@ -62,6 +65,7 @@ class MainEngine:
         self.engines: Dict[str, BaseEngine] = {}
         self.apps: Dict[str, BaseApp] = {}
         self.exchanges: List[Exchange] = []
+        self.wechat_client = Wechat(self)
 
         os.chdir(TRADER_DIR)    # Change working directory
         self.init_engines()     # Initialize function engines
@@ -225,6 +229,13 @@ class MainEngine:
         else:
             return None
 
+    def send_wechat(self, msg, usr_id=''):
+
+        self.wechat_client.send_markdown(msg, usr_id)
+
+    def send_wechat_log(self, msg, usr_id=''):
+        self.wechat_client.send_markdown(msg, usr_id, True)
+
     def close(self) -> None:
         """
         Make sure every gateway and app is closed properly before
@@ -351,6 +362,7 @@ class OmsEngine(BaseEngine):
         self.positions: Dict[str, PositionData] = {}
         self.accounts: Dict[str, AccountData] = {}
         self.contracts: Dict[str, ContractData] = {}
+        self.balances: Dict[str, BalanceData] = {}
         self.quotes: Dict[str, QuoteData] = {}
 
         self.active_orders: Dict[str, OrderData] = {}
@@ -368,6 +380,7 @@ class OmsEngine(BaseEngine):
         self.main_engine.get_trade = self.get_trade
         self.main_engine.get_position = self.get_position
         self.main_engine.get_account = self.get_account
+        self.main_engine.get_balance = self.get_balance
         self.main_engine.get_contract = self.get_contract
         self.main_engine.get_quote = self.get_quote
 
@@ -393,6 +406,7 @@ class OmsEngine(BaseEngine):
         self.event_engine.register(EVENT_POSITION, self.process_position_event)
         self.event_engine.register(EVENT_ACCOUNT, self.process_account_event)
         self.event_engine.register(EVENT_CONTRACT, self.process_contract_event)
+        self.event_engine.register(EVENT_BALANCE, self.process_balance_event)
         self.event_engine.register(EVENT_QUOTE, self.process_quote_event)
 
     def process_tick_event(self, event: Event) -> None:
@@ -441,6 +455,11 @@ class OmsEngine(BaseEngine):
         """"""
         account: AccountData = event.data
         self.accounts[account.vt_accountid] = account
+
+    def process_balance_event(self, event: Event) -> None:
+        """"""
+        balance = event.data
+        self.balances[balance.vt_balance_id] = balance
 
     def process_contract_event(self, event: Event) -> None:
         """"""
@@ -492,6 +511,12 @@ class OmsEngine(BaseEngine):
         Get latest account data by vt_accountid.
         """
         return self.accounts.get(vt_accountid, None)
+
+    def get_balance(self, vt_balance_id: str) -> Optional[BalanceData]:
+        """
+        Get latest balance data by vt_balanceid.
+        """
+        return  self.balances.get(vt_balance_id, None)
 
     def get_contract(self, vt_symbol: str) -> Optional[ContractData]:
         """
@@ -671,3 +696,53 @@ class EmailEngine(BaseEngine):
 
         self.active = False
         self.thread.join()
+
+
+class Wechat:
+    NAME = 'WECHAT'
+
+    CORPID = 'ww95c8cb5814063b59'
+
+    SECRET_LOG = 'dVCVIilWvSqOVeU-rgdxqhGxxArjpt4hk63m67gaRk4'
+    AGENTID_LOG = '1000004'
+
+    def __init__(self, main_engine: MainEngine):
+        """"""
+        self.SECRET = SETTINGS['wechat.secret']
+        self.AGENTID = SETTINGS['wechat.agent_id']
+        self.mainEngine = main_engine
+        self._wechat_client = WeChatClient(self.CORPID, self.SECRET)
+        self._wechat_client_log = WeChatClient(self.CORPID, self.SECRET_LOG)
+
+    def send_markdown(self, msg, usr_id, is_log=False):
+        try:
+            _off = SETTINGS['wechat.off']
+            _dt = datetime.now().strftime("%Y-%m-%d, %H:%M:%S")
+            msg = f"##### {_dt}\n{msg}"
+
+            if _off:
+                return
+
+            _client = self._wechat_client
+            _agent_id = self.AGENTID
+            _usr_id = usr_id
+
+            if is_log:
+                _client = self._wechat_client_log
+                _agent_id = self.AGENTID_LOG
+            if not _usr_id:
+                _usr_id = SETTINGS['wechat.usr_id']
+
+            _client.message.send_markdown(_agent_id, _usr_id, msg)
+        except Exception as e:
+            print(e)
+            self.mainEngine.write_log("微信发送消息错误", self.NAME)
+
+    def is_alive(self):
+        try:
+            apps = self._wechat_client.agent.list()
+            self.mainEngine.write_log(f'WeChat Apps:{apps}', self.NAME)
+            return 1
+        except:
+            self.mainEngine.write_log('微信连接错误', self.NAME)
+            return 0

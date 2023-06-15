@@ -14,7 +14,7 @@ import importlib_metadata
 
 from .qt import QtCore, QtGui, QtWidgets
 from ..constant import Direction, Exchange, Offset, OrderType
-from ..engine import MainEngine, Event, EventEngine
+from ..engine import MainEngine, Event, EventEngine, Wechat
 from ..event import (
     EVENT_QUOTE,
     EVENT_TICK,
@@ -414,6 +414,12 @@ class LogMonitor(BaseMonitor):
         "gateway_name": {"display": "接口", "cell": BaseCell, "update": False},
     }
 
+    def process_event(self, event: Event) -> None:
+        super(LogMonitor, self).process_event(event)
+        if event.data.gateway_name != Wechat.NAME:
+            msg = f"`log` \n" \
+                  f"> {event.data.msg}"
+            self.main_engine.send_wechat_log(msg)
 
 class TradeMonitor(BaseMonitor):
     """
@@ -495,10 +501,13 @@ class PositionMonitor(BaseMonitor):
         "exchange": {"display": "交易所", "cell": EnumCell, "update": False},
         "direction": {"display": "方向", "cell": DirectionCell, "update": False},
         "volume": {"display": "数量", "cell": BaseCell, "update": True},
-        "yd_volume": {"display": "昨仓", "cell": BaseCell, "update": True},
         "frozen": {"display": "冻结", "cell": BaseCell, "update": True},
         "price": {"display": "均价", "cell": BaseCell, "update": True},
-        "pnl": {"display": "盈亏", "cell": PnlCell, "update": True},
+        "pnl_unreal": {"display": "盈亏", "cell": PnlCell, "update": True},
+		"pnl_rate": {"display": "收益率", "cell": PnlCell, "update": True},
+        "mgn_ratio": {"display": "保证金率", "cell": BaseCell, "update": True},
+        "liq_px": {"display": "预估强平价", "cell": BaseCell, "update": True},
+        "lever": {"display": "杠杆倍数", "cell": BaseCell, "update": False},
         "gateway_name": {"display": "接口", "cell": BaseCell, "update": False},
     }
 
@@ -513,7 +522,7 @@ class AccountMonitor(BaseMonitor):
     sorting: bool = True
 
     headers: dict = {
-        "accountid": {"display": "账号", "cell": BaseCell, "update": False},
+        "accountid": {"display": "代码", "cell": BaseCell, "update": False},
         "balance": {"display": "余额", "cell": BaseCell, "update": True},
         "frozen": {"display": "冻结", "cell": BaseCell, "update": True},
         "available": {"display": "可用", "cell": BaseCell, "update": True},
@@ -1232,12 +1241,6 @@ class GlobalDialog(QtWidgets.QDialog):
 
             settings[field_name] = field_value
 
-        QtWidgets.QMessageBox.information(
-            self,
-            "注意",
-            "全局配置的修改需要重启后才会生效！",
-            QtWidgets.QMessageBox.Ok
-        )
-
         save_json(SETTING_FILENAME, settings)
+        SETTINGS.update(load_json(SETTING_FILENAME))
         self.accept()

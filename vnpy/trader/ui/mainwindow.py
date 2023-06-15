@@ -156,9 +156,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.add_action(
             help_menu,
-            "测试邮件",
+            "测试企业微信",
             get_icon_path(__file__, "email.ico"),
-            self.send_test_email
+            self.send_test_wechat
         )
 
         self.add_action(
@@ -308,11 +308,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_window_setting("default")
         self.showMaximized()
 
-    def send_test_email(self) -> None:
+    def send_test_wechat(self) -> None:
         """
-        Sending a test email.
+            Sending a test wechat message.
         """
-        self.main_engine.send_email("VeighNa Trader", "testing")
+        msg = f'`TEST` \n' \
+              f'> VNTrader'
+        self.main_engine.send_wechat(msg)
 
     def open_forum(self) -> None:
         """
