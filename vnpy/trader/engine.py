@@ -701,10 +701,10 @@ class EmailEngine(BaseEngine):
 class Wechat:
     NAME = 'WECHAT'
 
-    CORPID = 'ww95c8cb5814063b59'
+    CORPID = ''
 
-    SECRET_LOG = 'dVCVIilWvSqOVeU-rgdxqhGxxArjpt4hk63m67gaRk4'
-    AGENTID_LOG = '1000004'
+    SECRET_LOG = ''
+    AGENTID_LOG = ''
 
     def __init__(self, main_engine: MainEngine):
         """"""
